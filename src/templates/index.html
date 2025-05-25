@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件关系图管理工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- 引入Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入Cytoscape.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <!-- 引入布局扩展 -->
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.min.js"></script>
+    <!-- 引入交互扩展 -->
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-popper@2.0.0/cytoscape-popper.min.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-project-diagram"></i>
+                <h1>文件关系图管理工具</h1>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="搜索节点...">
+                <button id="search-btn"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="controls">
+                <button id="add-node-btn" class="btn primary"><i class="fas fa-plus"></i> 添加节点</button>
+                <button id="settings-btn" class="btn"><i class="fas fa-cog"></i></button>
+                <button id="help-btn" class="btn"><i class="fas fa-question-circle"></i></button>
+            </div>
+        </header>
+        
+        <main>
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3>节点列表</h3>
+                    <button id="collapse-sidebar-btn"><i class="fas fa-chevron-left"></i></button>
+                </div>
+                <div class="node-list" id="node-list">
+                    <!-- 节点列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <div class="graph-container" id="graph-container">
+                <!-- 关系图将在这里渲染 -->
+            </div>
+            
+            <div class="node-details" id="node-details">
+                <div class="node-details-header">
+                    <h3>节点详情</h3>
+                    <button id="close-details-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="node-details-content">
+                    <form id="node-form">
+                        <input type="hidden" id="node-id">
+                        <div class="form-group">
+                            <label for="node-name">名称</label>
+                            <input type="text" id="node-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="node-path">路径/URL</label>
+                            <input type="text" id="node-path" required>
+                        </div>
+                        <div class="form-group checkbox">
+                            <input type="checkbox" id="node-is-url">
+                            <label for="node-is-url">是网址</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="node-note">备注</label>
+                            <textarea id="node-note" rows="4"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="save-node-btn" class="btn primary">保存</button>
+                            <button type="button" id="delete-node-btn" class="btn danger">删除</button>
+                            <button type="button" id="open-node-btn" class="btn">打开</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 模态框 -->
+        <div class="modal" id="add-node-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加新节点</h3>
+                    <button class="close-modal-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-node-form">
+                        <div class="form-group">
+                            <label for="new-node-name">名称</label>
+                            <input type="text" id="new-node-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-node-path">路径/URL</label>
+                            <input type="text" id="new-node-path" required>
+                        </div>
+                        <div class="form-group checkbox">
+                            <input type="checkbox" id="new-node-is-url">
+                            <label for="new-node-is-url">是网址</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-node-note">备注</label>
+                            <textarea id="new-node-note" rows="4"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="connect-to-node">连接到节点（可选）</label>
+                            <select id="connect-to-node">
+                                <option value="">无</option>
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="create-node-btn" class="btn primary">创建</button>
+                    <button class="cancel-btn btn">取消</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal" id="settings-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>设置</h3>
+                    <button class="close-modal-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="settings-form">
+                        <div class="form-group">
+                            <label for="theme-select">主题</label>
+                            <select id="theme-select">
+                                <option value="light">浅色</option>
+                                <option value="dark">深色</option>
+                                <option value="system">跟随系统</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="layout-select">布局算法</label>
+                            <select id="layout-select">
+                                <option value="cose-bilkent">Cose-Bilkent</option>
+                                <option value="breadthfirst">层次布局</option>
+                                <option value="circle">圆形布局</option>
+                                <option value="grid">网格布局</option>
+                            </select>
+                        </div>
+                        <div class="form-group checkbox">
+                            <input type="checkbox" id="auto-save-checkbox">
+                            <label for="auto-save-checkbox">自动保存</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-settings-btn" class="btn primary">保存</button>
+                    <button class="cancel-btn btn">取消</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal" id="add-edge-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>添加关系</h3>
+                    <button class="close-modal-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-edge-form">
+                        <input type="hidden" id="edge-source-id">
+                        <div class="form-group">
+                            <label for="edge-target-node">目标节点</label>
+                            <select id="edge-target-node" required>
+                                <!-- 选项将通过JavaScript动态生成 -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edge-label">关系标签（可选）</label>
+                            <input type="text" id="edge-label">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="create-edge-btn" class="btn primary">创建</button>
+                    <button class="cancel-btn btn">取消</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="toast" id="toast">
+            <div class="toast-content">
+                <i class="fas fa-info-circle toast-icon"></i>
+                <span class="toast-message">操作成功</span>
+            </div>
+            <div class="toast-progress"></div>
+        </div>
+    </div>
+    
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/graph.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
